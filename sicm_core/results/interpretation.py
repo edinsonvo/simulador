@@ -53,6 +53,9 @@ def _build_bullets(
         ("P", "Nivel de precios (P)"),
         ("e", "Tipo de cambio (e)"),
         ("NX", "Exportaciones netas (NX)"),
+        ("gap", "Brecha de producto (gap)"),
+        ("pi", "Inflación (π)"),
+        ("u", "Desempleo (u)"),
     ):
         b, f = baseline.get(var), final.get(var)
         if b is None or f is None:
@@ -62,11 +65,34 @@ def _build_bullets(
                 f"{label}: {_fmt(b * 100)}% → {_fmt(f * 100)}% "
                 f"({(f - b) * 100:+.2f} p.p.)."
             )
+        elif var in ("gap", "pi"):
+            base = b * 100.0
+            diff = (f - b) * 100.0
+            bullets.append(
+                f"{label}: {_fmt(base)}% → {_fmt(f * 100)}% ({diff:+.2f} p.p.)."
+            )
+        elif var == "u":
+            bullets.append(
+                f"{label}: {_fmt(b * 100)}% → {_fmt(f * 100)}% "
+                f"({(f - b) * 100:+.2f} p.p.)."
+            )
         else:
             base = b if abs(b) > _EPS else 1.0
             bullets.append(
                 f"{label}: {_fmt(b)} → {_fmt(f)} ({(f - b) / base * 100:+.2f}%)."
             )
+    for var, label in (
+        ("N", "Empleo (N)"),
+        ("w", "Salario real (W/P)"),
+        ("W", "Salario nominal (W)"),
+    ):
+        b, f = baseline.get(var), final.get(var)
+        if b is None or f is None:
+            continue
+        base = b if abs(b) > _EPS else 1.0
+        bullets.append(
+            f"{label}: {_fmt(b)} → {_fmt(f)} ({(f - b) / base * 100:+.2f}%)."
+        )
     return bullets
 
 
@@ -88,6 +114,39 @@ def _build_summary(
             f"los cambios en la oferta monetaria afectan solo al nivel de "
             f"precios y dejan inalterados el producto real y la tasa real. "
             f"El choque descrito ({shock_desc or '—'}) mueve {y_part}."
+        )
+    if family == "new_keynesian":
+        return (
+            "Modelo neokeynesiano: el banco central sigue una regla de Taylor "
+            f"y los precios se ajustan gradualmente (Phillips). El choque "
+            f"({shock_desc or '—'}) es de carácter {direction} y mueve la "
+            "brecha de producto y la inflación hasta que el impulso fiscal "
+            "o monetario se desvanece."
+        )
+    if family == "labor":
+        return (
+            "Modelo de mercado laboral: la brecha de producto "
+            "(gap = (Y_obs − Yn)/Yn) traduce el nivel de actividad en "
+            f"desempleo (Okun) e inflación (Phillips). El choque "
+            f"({shock_desc or '—'}) mueve {y_part} y con él el desempleo "
+            "y la inflación según la sensibilidad de cada curva."
+        )
+    if family == "integrated":
+        return (
+            "Modelo integrado: bienes, dinero, trabajo y sector externo "
+            "se resuelven en un solo sistema. El equilibrio simultáneo "
+            "determina producto, precios, tasa, tipo de cambio, desempleo "
+            f"e inflación. El choque ({shock_desc or '—'}) es de carácter "
+            f"{direction} y se propaga por los cuatro planos."
+        )
+    if family == "four_quadrant":
+        return (
+            "Modelo de cuatro cuadrantes: IS-LM y demanda agregada "
+            "determinan (Y, i, P); el mercado laboral cierra el ciclo con "
+            "salario real (productividad marginal), empleo y salario "
+            "nominal. El choque ({shock_desc or '—'}) es de carácter "
+            f"{direction}: se propaga II → Y → III → P → IV → W/P → N → I "
+            "→ W → II hasta alcanzar el nuevo equilibrio."
         )
     return (
         "La economía ajusta el mercado de bienes y el de dinero "

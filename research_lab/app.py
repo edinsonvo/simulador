@@ -18,10 +18,8 @@ from sicm_core.analysis.shocks import apply_shocks
 from sicm_core.analysis.sensitivity import one_factor_at_a_time
 from sicm_core.branding import (
     AUTHOR,
-    CAMPUS,
     EMAIL,
     GITHUB,
-    INSTITUTION,
     VERSION,
     institution_line,
 )
@@ -32,11 +30,13 @@ from sicm_core.io import ExperimentStore, result_to_excel
 from research_lab.reports.pdf import generate_pdf_report
 from research_lab.ui.controls import (
     build_scenario,
+    expectations_selector,
+    horizon_selector,
     parameter_editor,
     regime_selector,
     shock_selector,
 )
-from research_lab.visualization.plots import plot_comparison, plot_result
+from research_lab.visualization.plots import _LABELS, plot_comparison, plot_result
 
 st.set_page_config(page_title="SICM Research Lab", page_icon="📈",
                    layout="wide", initial_sidebar_state="expanded")
@@ -105,8 +105,6 @@ def _sidebar():
             unsafe_allow_html=True,
         )
         st.markdown("## 📈 SICM Research Lab")
-        st.caption(f"v{VERSION} · Milestone 1 — Infraestructura")
-        st.caption(f"{AUTHOR} · {INSTITUTION} · {CAMPUS}")
         st.divider()
         page = st.radio("Navegación", PAGES, key="nav")
         st.divider()
@@ -117,14 +115,20 @@ def _sidebar():
             )
             params = default_scenario(model).parameters
             st.session_state["params"] = parameter_editor(model, params)
-            if model == "mundell_fleming":
+            if model in ("mundell_fleming", "islm_bp", "integrated"):
                 st.session_state["regime"] = regime_selector()
+            if model in ("as_ad", "four_quadrant"):
+                st.session_state["horizon_val"] = horizon_selector()
+            if model == "new_classical":
+                st.session_state["expectations_val"] = expectations_selector()
             st.session_state["shock"] = shock_selector(model)
             st.session_state["scenario"] = build_scenario(
                 model,
                 st.session_state["params"],
                 st.session_state.get("shock"),
                 st.session_state.get("regime"),
+                st.session_state.get("horizon_val"),
+                st.session_state.get("expectations_val"),
             )
             st.divider()
             if st.button("▶️ Ejecutar experimento", type="primary", key="run"):
@@ -154,12 +158,33 @@ def _run_experiment():
 # ---------------------------------------------------------------------------
 def _metric_column(result, key, label, fmt):
     b = result.baseline.get(key)
-    f = result.equilibrium[key]
+    f = result.equilibrium.get(key)
+    if f is None:
+        return
     delta = f - b if b is not None else None
     if delta is None:
         st.metric(label, fmt(f))
         return
     st.metric(label, fmt(f), fmt(delta) if abs(delta) > 1e-12 else "sin cambio")
+
+
+def _dashboard_metrics(result):
+    eq = result.equilibrium
+    cols = st.columns(4)
+    with cols[0]:
+        _metric_column(result, "Y", "Producto (Y)", lambda v: f"{v:,.1f}")
+    with cols[1]:
+        _metric_column(result, "r", "Tasa (r)", lambda v: f"{v * 100:.2f}%")
+    with cols[2]:
+        if eq.get("P") is not None:
+            _metric_column(result, "P", "Precios (P)", lambda v: f"{v:.3f}")
+        elif eq.get("u") is not None:
+            _metric_column(result, "u", "Desempleo (u)", lambda v: f"{v * 100:.2f}%")
+    with cols[3]:
+        if eq.get("e") is not None:
+            _metric_column(result, "e", "Tipo de cambio (e)", lambda v: f"{v:,.1f}")
+        elif eq.get("pi") is not None:
+            _metric_column(result, "pi", "Inflación (π)", lambda v: f"{v * 100:.2f}%")
 
 
 def page_dashboard():
@@ -175,20 +200,11 @@ def page_dashboard():
     emoji = {"expansivo": "🟢", "contractivo": "🔴", "neutro": "⚪"}[direction]
 
     st.subheader(f"{LABELS[model]} · efecto {direction} {emoji}")
-    cols = st.columns(4)
-    with cols[0]:
-        _metric_column(result, "Y", "Producto (Y)", lambda v: f"{v:,.1f}")
-    with cols[1]:
-        _metric_column(result, "r", "Tasa (r)", lambda v: f"{v * 100:.2f}%")
-    if result.equilibrium.get("P") is not None:
-        with cols[2]:
-            _metric_column(result, "P", "Precios (P)", lambda v: f"{v:.3f}")
-    if result.equilibrium.get("e") is not None:
-        with cols[3]:
-            _metric_column(result, "e", "Tipo de cambio (e)", lambda v: f"{v:,.1f}")
+    _dashboard_metrics(result)
 
     st.divider()
     scenario = st.session_state["experiment"].scenario
+    base_model = dispatch(scenario)
     final_model = None
     if scenario.shocks:
         shocked_params, _ = apply_shocks(scenario.parameters, scenario.shocks)
@@ -199,7 +215,7 @@ def page_dashboard():
 
     col1, col2 = st.columns([3, 2])
     with col1:
-        fig = plot_result(result, dispatch(scenario), final_model)
+        fig = plot_result(result, base_model, final_model)
         st.plotly_chart(fig, width="stretch")
     with col2:
         st.subheader("Interpretación")
@@ -209,6 +225,13 @@ def page_dashboard():
         st.subheader("Canales de transmisión")
         for channel in result.transmission.channels:
             st.markdown(f"- {channel}")
+
+    if model == "four_quadrant":
+        _dashboard_four_quadrant(result, final_model or base_model)
+
+    with st.expander("🗂️ Leyenda de variables utilizadas"):
+        for key in result.equilibrium.keys():
+            st.markdown(f"- **`{key}`** — {_LABELS.get(key, key)}")
 
     st.divider()
     with st.expander("🔢 Tabla de variables"):
@@ -254,6 +277,57 @@ def page_dashboard():
     _footer()
 
 
+def _dashboard_four_quadrant(result, final_model):
+    """Secciones específicas del modelo de cuatro cuadrantes."""
+    from sicm_core.models.four_quadrant import transmission_steps
+    from research_lab.visualization.plots import (
+        plot_convergence,
+        plot_transmission_mechanism,
+    )
+
+    scenario = st.session_state["experiment"].scenario
+
+    st.divider()
+    st.subheader("🧩 Mecanismo de transmisión entre cuadrantes")
+    if scenario.shocks:
+        target = scenario.shocks[0].target
+        steps = transmission_steps(target, result.baseline, result.equilibrium)
+        fig = plot_transmission_mechanism(steps, result.baseline,
+                                          result.equilibrium)
+        st.plotly_chart(fig, width="stretch")
+        for paso in steps:
+            origen = " · **origen del choque**" if paso["valor"] == "origen" else ""
+            st.markdown(f"**{paso['titulo']}**{origen}\n\n{paso['detalle']}")
+    else:
+        st.info("Aplique un choque para visualizar el mecanismo de transmisión.")
+
+    st.divider()
+    st.subheader("⏳ Convergencia dinámica (expectativas adaptativas)")
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        speed = st.slider("Velocidad de ajuste de P^e", 0.05, 0.9, 0.3, 0.05,
+                          key="fq_speed")
+        periods = st.slider("Horizonte (periodos)", 5, 40, 20, 5,
+                            key="fq_periods")
+    with c2:
+        fig = plot_convergence(final_model, periods=periods, speed=speed)
+        st.plotly_chart(fig, width="stretch")
+
+    with st.expander("📋 Tabla de los cuatro cuadrantes"):
+        st.markdown(
+            """
+            | Cuadrante | Plano | Variables | Función |
+            |---|---|---|---|
+            | **II** (superior izquierdo) | IS-LM | (Y, i) | Equilibrio de bienes (IS) y dinero (LM) |
+            | **III** (inferior izquierdo) | AD-AS | (Y, P) | DA derivada de IS-LM vs. OA de corto plazo |
+            | **IV** (inferior derecho) | Demanda de trabajo | (N, W/P) | W/P = PMgL (productividad marginal) |
+            | **I** (superior derecho) | Oferta de trabajo | (N, W) | W ajusta según N^s = N₀ + η·(W/P^e) |
+
+            **Lazo de retroalimentación:** II → Y → III → P → IV → W/P → N → I → W → II.
+            """
+        )
+
+
 def page_sensitivity():
     st.title("🧪 Laboratorio de Sensibilidad")
     st.caption("Análisis unifactorial: varía un parámetro y mide el efecto en el equilibrio.")
@@ -268,6 +342,14 @@ def page_sensitivity():
         "mundell_fleming": ["G", "M", "r_w", "NX0"],
         "classical_closed": ["M", "G", "Yn", "V"],
         "classical_open": ["M", "G", "r_w", "Yn"],
+        "as_ad": ["G", "M", "Yn", "lambda_pc"],
+        "islm_bp": ["G", "M", "r_w", "kappa"],
+        "new_keynesian": ["G", "pi_target", "sigma", "phi_taylor"],
+        "new_classical": ["M", "Pe", "Yn", "alpha_lucas"],
+        "okun": ["Y_obs", "Yn", "beta_okun"],
+        "phillips": ["Y_obs", "pi_e", "lambda_pc"],
+        "integrated": ["G", "M", "r_w", "Yn", "pi_target"],
+        "four_quadrant": ["G", "M", "A_prod", "Pe", "lambda_pc"],
     }.get(model, ["G", "M"])
 
     c1, c2 = st.columns([1, 1])
@@ -342,17 +424,102 @@ def page_docs():
         )
         st.caption(f"SICM v{VERSION} · Simulador Integral de Choques Macroeconómicos")
     st.divider()
+
     st.markdown(
         """
-        ## Milestone 1: Infraestructura
+        ## Objetivos
 
-        **Nuevo flujo:** Sidebar → Scenario → Experiment → Engine → Result → Dashboard
+        SICM Research Lab es una plataforma de **simulación y análisis de
+        economía macroeconómica** diseñada para el estudio de los efectos de
+        la política fiscal, monetaria, cambiaria y de expectativas sobre el
+        equilibrio de la economía. Sus objetivos son:
 
-        ### Paquetes
-        - `sicm_core` — biblioteca reutilizable (modelos, motor, análisis, resultados, I/O).
-        - `research_lab` — interfaz Streamlit, visualización y reportes.
+        - **Modelar** los principales marcos teóricos de la macroeconomía en
+          un mismo entorno: keynesiano (IS-LM, Mundell-Fleming, OA-DA,
+          IS-LM-BP), neokeynesiano (3 ecuaciones), clásico (cerrado, abierto
+          y nuevo/curva de Lucas), mercado laboral (Okun y Phillips), el
+          macromodelo integrado de cuatro planos y el equilibrio general de
+          cuatro cuadrantes (IS-LM, AD-AS y mercado laboral).
+        - **Simular** escenarios de equilibrio base y con choques, con
+          parámetros ajustables de forma interactiva.
+        - **Analizar** los resultados mediante interpretación automática en
+          lenguaje natural, canales de transmisión, comparaciones base vs.
+          choque y análisis de sensibilidad unifactorial.
+        - **Documentar y exportar** experimentos (PDF, Excel) para su uso
+          académico y de investigación.
         """
     )
+
+    st.markdown(
+        """
+        ## La plataforma
+
+        El laboratorio se organiza en dos paquetes complementarios:
+
+        - **`sicm_core`** — biblioteca reutilizable que contiene los modelos,
+          el motor de ejecución, los análisis (choques, políticas,
+          sensibilidad), los resultados (interpretación, transmisión) y las
+          utilidades de entrada/salida.
+        - **`research_lab`** — interfaz interactiva construida con Streamlit
+          (paneles de configuración, dashboard de resultados, laboratorio de
+          sensibilidad, almacén de experimentos, documentación) y la capa de
+          visualización y reportes.
+
+        El flujo de datos sigue la cadena
+        **Sidebar → Scenario → Experiment → Engine → Result → Dashboard**:
+        la barra lateral configura el escenario, el motor resuelve el
+        equilibrio del modelo con los parámetros y choques indicados, y el
+        dashboard presenta las cifras, gráficas, interpretación y canales de
+        transmisión.
+        """
+    )
+
+    st.markdown(
+        """
+        ## Formas de uso
+
+        1. **Seleccione el modelo** en la barra lateral y ajuste los
+           parámetros con los deslizadores del panel «Parámetros del modelo».
+        2. **Configure el contexto** del modelo según corresponda: régimen
+           cambiario (economías abiertas), horizonte de corto/largo plazo
+           (OA-DA) o formación de expectativas (clásico nuevo).
+        3. **Aplique un choque** del catálogo (por ejemplo, +10 % de gasto
+           público o una expansión monetaria) o ejecute sin choques para
+           obtener el equilibrio de referencia.
+        4. **Ejecute el experimento** y revise el dashboard: métricas,
+           gráficas de curvas (IS-LM, IS-LM-BP, OA-DA, Phillips, Okun o los
+           cuatro planos), interpretación automática y canales de transmisión.
+        5. **Profundice** con el Laboratorio de Sensibilidad, variando un
+           parámetro en un rango y midiendo el efecto sobre las variables del
+           equilibrio.
+        6. **Guarde y exporte** el experimento en el almacén o descargue el
+           reporte en PDF o Excel.
+        """
+    )
+
+    st.markdown(
+        """
+        ## Formas de análisis
+
+        - **Equilibrio base:** solución del modelo con la calibración de
+          referencia, sin perturbaciones.
+        - **Choques:** perturbaciones proporcionales o absolutas sobre un
+          parámetro (gasto, impuestos, dinero, tasas, expectativas, ancla
+          cambiaria, productividad), con comparación base vs. final.
+        - **Políticas:** expansión/contracción fiscal y monetaria como
+          choques predefinidos.
+        - **Sensibilidad:** efecto de un parámetro sobre las variables del
+          equilibrio a lo largo de un rango de valores.
+        - **Interpretación:** lectura automática del resultado que describe
+          la dirección del efecto (expansivo, contractivo o neutro) y las
+          variables relevantes.
+        - **Transmisión:** canales a través de los cuales se propaga el
+          choque según la estructura de mercado del modelo.
+        - **Exportación:** reporte PDF y hoja de cálculo Excel con la tabla
+          de variables base, final y variación.
+        """
+    )
+
     st.subheader("Modelos registrados")
     st.table(pd.DataFrame(_engine().catalog()))
     st.subheader("Catálogo de choques")

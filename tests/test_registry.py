@@ -8,15 +8,37 @@ from sicm_core.engine.registry import ModelNotFoundError, registry
 
 
 def test_models_registered():
-    assert {"islm", "mundell_fleming", "classical_closed", "classical_open"} <= set(
-        registry.names()
-    )
+    assert {
+        "islm",
+        "mundell_fleming",
+        "classical_closed",
+        "classical_open",
+        "as_ad",
+        "islm_bp",
+        "new_keynesian",
+        "new_classical",
+        "okun",
+        "phillips",
+        "integrated",
+    } <= set(registry.names())
 
 
 def test_families():
     families = registry.families()
-    assert families["keynesian"] == ["islm", "mundell_fleming"]
-    assert set(families["classical"]) == {"classical_closed", "classical_open"}
+    assert set(families["keynesian"]) == {
+        "islm",
+        "mundell_fleming",
+        "as_ad",
+        "islm_bp",
+    }
+    assert set(families["classical"]) == {
+        "classical_closed",
+        "classical_open",
+        "new_classical",
+    }
+    assert set(families["labor"]) == {"okun", "phillips"}
+    assert set(families["new_keynesian"]) == {"new_keynesian"}
+    assert set(families["integrated"]) == {"integrated"}
 
 
 def test_labels_present():
