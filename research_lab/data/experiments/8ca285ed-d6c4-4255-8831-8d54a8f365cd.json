@@ -1,0 +1,100 @@
+{
+  "__sicm_type__": "Experiment",
+  "id": "8ca285ed-d6c4-4255-8831-8d54a8f365cd",
+  "name": "islm · equilibrio base",
+  "description": "equilibrio base",
+  "author": "Research Lab",
+  "created_at": "2026-08-02T02:25:30.794936+00:00",
+  "notes": "",
+  "status": "completed",
+  "scenario": {
+    "__sicm_type__": "Scenario",
+    "model": "islm",
+    "label": "Escenario islm",
+    "parameters": {
+      "__sicm_type__": "EconomyParameters",
+      "values": {
+        "C0": 50.0,
+        "c": 0.75,
+        "I0": 100.0,
+        "b": 0.4,
+        "G": 120.0,
+        "T": 80.0,
+        "M": 350.0,
+        "k": 0.5,
+        "h": 1500.0,
+        "P": 1.5125,
+        "Yn": 1000.0,
+        "V": 1.0,
+        "s": 0.2,
+        "r_w": 0.05,
+        "kappa": 1000000000.0,
+        "theta": 0.5,
+        "e_bar": 200.0,
+        "NX0": 30.0
+      }
+    },
+    "shocks": [],
+    "metadata": {}
+  },
+  "result": {
+    "__sicm_type__": "EquilibriumResult",
+    "equilibrium": {
+      "__sicm_type__": "Equilibrium",
+      "model": "islm",
+      "variables": {
+        "Y": 820.9017679673607,
+        "r": 0.11936395020399626,
+        "C": 605.6763259755205,
+        "I": 95.22544199184014
+      },
+      "label": "equilibrio"
+    },
+    "baseline": {
+      "__sicm_type__": "Equilibrium",
+      "model": "islm",
+      "variables": {
+        "Y": 820.9017679673607,
+        "r": 0.11936395020399626,
+        "C": 605.6763259755205,
+        "I": 95.22544199184014
+      },
+      "label": "equilibrio"
+    },
+    "shocks": [],
+    "plots": [],
+    "metrics": {
+      "deltas": {
+        "Y": 0.0,
+        "r": 0.0,
+        "C": 0.0,
+        "I": 0.0
+      },
+      "relative_changes": {
+        "Y": 0.0,
+        "r": 0.0,
+        "C": 0.0,
+        "I": 0.0
+      },
+      "multipliers": {}
+    },
+    "interpretation": {
+      "title": "IS-LM (economía cerrada): equilibrio de referencia",
+      "summary": "La economía ajusta el mercado de bienes y el de dinero simultáneamente. El choque (—) es de carácter neutro: desplaza el producto en +0.00% y reasigna la composición del gasto (consumo, inversión, gasto público y, en economías abiertas, el sector externo).",
+      "bullets": [
+        "Producto (Y): 820.90 → 820.90 (+0.00%).",
+        "Tasa de interés (r): 11.94% → 11.94% (+0.00 p.p.)."
+      ],
+      "direction": "neutro"
+    },
+    "transmission": {
+      "channels": [
+        "Mercado de bienes (IS): multiplicador del gasto y efecto impuestos.",
+        "Mercado de dinero (LM): saldos reales (M/P).",
+        "Canal de la tasa de interés: inversión sensible a r.",
+        "Efecto crowding-out: la suba de r expulsa inversión privada."
+      ],
+      "description": "La propagación del choque sigue la estructura de mercado del modelo: los mercados se reequilibran y los efectos reales dependen del grado de flexibilidad de precios y de la movilidad internacional del capital."
+    }
+  }
+}

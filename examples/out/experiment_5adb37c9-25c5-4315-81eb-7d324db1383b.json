@@ -1,0 +1,121 @@
+{
+  "__sicm_type__": "Experiment",
+  "id": "5adb37c9-25c5-4315-81eb-7d324db1383b",
+  "name": "islm · G",
+  "description": "",
+  "author": "ejemplo-cli",
+  "created_at": "2026-08-01T23:02:16.057676+00:00",
+  "notes": "",
+  "status": "completed",
+  "scenario": {
+    "__sicm_type__": "Scenario",
+    "model": "islm",
+    "label": "",
+    "parameters": {
+      "__sicm_type__": "EconomyParameters",
+      "values": {
+        "C0": 50.0,
+        "c": 0.75,
+        "I0": 100.0,
+        "b": 0.4,
+        "G": 120.0,
+        "T": 80.0,
+        "M": 350.0,
+        "k": 0.5,
+        "h": 1500.0,
+        "P": 1.0,
+        "Yn": 1000.0,
+        "V": 1.0,
+        "s": 0.2,
+        "r_w": 0.05,
+        "kappa": 1000000000.0,
+        "theta": 0.5,
+        "e_bar": 200.0,
+        "NX0": 30.0
+      }
+    },
+    "shocks": [
+      {
+        "__sicm_type__": "Shock",
+        "target": "G",
+        "magnitude": 0.1,
+        "absolute": false,
+        "description": "cambio de G en 10%"
+      }
+    ],
+    "metadata": {
+      "calibration": "default"
+    }
+  },
+  "result": {
+    "__sicm_type__": "EquilibriumResult",
+    "equilibrium": {
+      "__sicm_type__": "Equilibrium",
+      "model": "islm",
+      "variables": {
+        "Y": 878.4810126582279,
+        "r": 0.05949367088607596,
+        "C": 648.8607594936709,
+        "I": 97.62025316455696
+      },
+      "label": "equilibrio"
+    },
+    "baseline": {
+      "__sicm_type__": "Equilibrium",
+      "model": "islm",
+      "variables": {
+        "Y": 832.9113924050633,
+        "r": 0.044303797468354444,
+        "C": 614.6835443037975,
+        "I": 98.22784810126582
+      },
+      "label": "equilibrio"
+    },
+    "shocks": [
+      {
+        "__sicm_type__": "Shock",
+        "target": "G",
+        "magnitude": 0.1,
+        "absolute": false,
+        "description": "cambio de G en 10%"
+      }
+    ],
+    "plots": [],
+    "metrics": {
+      "deltas": {
+        "Y": 45.569620253164544,
+        "r": 0.015189873417721517,
+        "C": 34.177215189873436,
+        "I": -0.607594936708864
+      },
+      "relative_changes": {
+        "Y": 0.05471124620060788,
+        "r": 0.3428571428571427,
+        "C": 0.05560131795716642,
+        "I": -0.006185567010309312
+      },
+      "multipliers": {
+        "dY_dG": 3.7974683544303787,
+        "dr_dG": 0.0012658227848101264
+      }
+    },
+    "interpretation": {
+      "title": "IS-LM (economía cerrada): efecto de cambio de G en 10%",
+      "summary": "La economía ajusta el mercado de bienes y el de dinero simultáneamente. El choque (cambio de G en 10%) es de carácter expansivo: desplaza el producto en +5.47% y reasigna la composición del gasto (consumo, inversión, gasto público y, en economías abiertas, el sector externo).",
+      "bullets": [
+        "Producto (Y): 832.91 → 878.48 (+5.47%).",
+        "Tasa de interés (r): 4.43% → 5.95% (+1.52 p.p.)."
+      ],
+      "direction": "expansivo"
+    },
+    "transmission": {
+      "channels": [
+        "Mercado de bienes (IS): multiplicador del gasto y efecto impuestos.",
+        "Mercado de dinero (LM): saldos reales (M/P).",
+        "Canal de la tasa de interés: inversión sensible a r.",
+        "Efecto crowding-out: la suba de r expulsa inversión privada."
+      ],
+      "description": "La propagación del choque sigue la estructura de mercado del modelo: los mercados se reequilibran y los efectos reales dependen del grado de flexibilidad de precios y de la movilidad internacional del capital."
+    }
+  }
+}
