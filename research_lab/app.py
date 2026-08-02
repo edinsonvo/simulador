@@ -8,7 +8,15 @@ from __future__ import annotations
 
 import io
 import json
+import sys
 from pathlib import Path
+
+# Garantiza que el paquete sicm_core sea importable al ejecutar la app desde
+# el directorio de la app (p. ej. Streamlit Cloud / GitHub Actions), donde
+# sys.path[0] apunta a research_lab/ y no a la raíz del repositorio.
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
 
 import pandas as pd
 import streamlit as st
