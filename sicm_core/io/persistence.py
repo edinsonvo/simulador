@@ -7,7 +7,7 @@ from pathlib import Path
 from uuid import UUID
 
 from ..experiments.experiment import Experiment
-from .json_io import experiment_from_dict, experiment_to_dict, load_json, save_json
+from .json_io import experiment_to_dict, load_json
 
 
 class ExperimentStore:

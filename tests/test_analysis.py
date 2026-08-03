@@ -8,8 +8,8 @@ from sicm_core.analysis.policy import (
     policy_shock,
     simulate_policy,
 )
-from sicm_core.analysis.shocks import SHOCK_CATALOG, apply_shocks, shocks_for
 from sicm_core.analysis.sensitivity import one_factor_at_a_time
+from sicm_core.analysis.shocks import SHOCK_CATALOG, apply_shocks, shocks_for
 from sicm_core.engine import Engine
 from sicm_core.experiments import default_scenario
 

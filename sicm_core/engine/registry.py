@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 
 if TYPE_CHECKING:
     from ..models.base_model import BaseModel
@@ -22,15 +22,15 @@ class ModelRegistry:
     una implementación concreta.
     """
 
-    _models: dict[str, type["BaseModel"]] = {}
+    _models: ClassVar[dict[str, type[BaseModel]]] = {}
 
-    def register(self, cls: type["BaseModel"]) -> type["BaseModel"]:
+    def register(self, cls: type[BaseModel]) -> type[BaseModel]:
         if not getattr(cls, "name", None):
             raise ValueError(f"El modelo {cls!r} debe definir 'name'.")
         self._models[cls.name] = cls
         return cls
 
-    def get(self, name: str) -> type["BaseModel"]:
+    def get(self, name: str) -> type[BaseModel]:
         try:
             return self._models[name]
         except KeyError:
@@ -67,6 +67,6 @@ class ModelRegistry:
 registry = ModelRegistry()
 
 
-def register(cls: type["BaseModel"]) -> type["BaseModel"]:
+def register(cls: type[BaseModel]) -> type[BaseModel]:
     """Decorador para dar de alta un modelo en el registro."""
     return registry.register(cls)

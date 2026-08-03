@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Mapping
 
 from ..experiments.scenario import EconomyParameters, Shock
 
@@ -114,8 +114,7 @@ class ShockSpec:
 
 
 SHOCK_CATALOG: dict[str, list[ShockSpec]] = {
-    model: [ShockSpec(*spec) for spec in specs]
-    for model, specs in _SHOCK_SPECS.items()
+    model: [ShockSpec(*spec) for spec in specs] for model, specs in _SHOCK_SPECS.items()
 }
 
 

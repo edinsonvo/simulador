@@ -50,3 +50,11 @@ line-length = 90
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["sicm_core", "research_lab"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90

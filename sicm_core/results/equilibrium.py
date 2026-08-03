@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..experiments.scenario import Shock
@@ -57,7 +58,7 @@ class Equilibrium:
     def __len__(self) -> int:
         return len(self.variables)
 
-    def diff(self, other: "Equilibrium") -> dict[str, float]:
+    def diff(self, other: Equilibrium) -> dict[str, float]:
         """Cambios absolutos ``other - self`` para variables compartidas."""
         return {
             k: float(other.variables[k]) - float(self.variables[k])
@@ -65,7 +66,7 @@ class Equilibrium:
             if k in other.variables
         }
 
-    def rel_diff(self, other: "Equilibrium") -> dict[str, float]:
+    def rel_diff(self, other: Equilibrium) -> dict[str, float]:
         """Cambios relativos ``(other - self) / self`` para variables compartidas."""
         out: dict[str, float] = {}
         for k in self.variables:
@@ -90,12 +91,12 @@ class EquilibriumResult:
     """
 
     equilibrium: Equilibrium
-    metrics: "Metrics"
-    interpretation: "Interpretation"
-    transmission: "Transmission"
+    metrics: Metrics
+    interpretation: Interpretation
+    transmission: Transmission
     plots: list[str] = field(default_factory=list)
     baseline: Equilibrium | None = None
-    shocks: list["Shock"] = field(default_factory=list)
+    shocks: list[Shock] = field(default_factory=list)
 
     def variable_table(self) -> dict[str, dict[str, Any]]:
         """Tabla comparativa variable → {base, final, delta}."""
@@ -114,10 +115,10 @@ class EquilibriumResult:
 
 
 def build_result(
-    model: "BaseModel",
+    model: BaseModel,
     baseline: Equilibrium,
     final: Equilibrium,
-    shocks: list["Shock"],
+    shocks: list[Shock],
 ) -> EquilibriumResult:
     """Ensambla un :class:`EquilibriumResult` a partir de los equilibrios."""
     from .interpretation import build_interpretation

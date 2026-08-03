@@ -30,9 +30,9 @@ def test_closed_money_neutral():
 
 def test_closed_fiscal_crowding_out():
     baseline, final = _solve("classical_closed", Shock("G", 0.10))
-    assert final.Y == pytest.approx(baseline.Y)   # pleno empleo
-    assert final.r > baseline.r                   # sube la tasa
-    assert final.I < baseline.I                   # cae la inversión
+    assert final.Y == pytest.approx(baseline.Y)  # pleno empleo
+    assert final.r > baseline.r  # sube la tasa
+    assert final.I < baseline.I  # cae la inversión
 
 
 def test_open_baseline():
@@ -44,8 +44,8 @@ def test_open_baseline():
 def test_open_fiscal_crowding_via_nx():
     baseline, final = _solve("classical_open", Shock("G", 0.10))
     assert final.Y == pytest.approx(baseline.Y)
-    assert final.NX < baseline.NX    # caen las exportaciones netas
-    assert final.e > baseline.e      # se deprecia el tipo de cambio
+    assert final.NX < baseline.NX  # caen las exportaciones netas
+    assert final.e > baseline.e  # se deprecia el tipo de cambio
 
 
 def test_open_money_neutral():

@@ -36,8 +36,7 @@ def test_run_scenario(engine):
 
 def test_run_many(engine):
     experiments = [
-        new_experiment(name=f"e{i}", scenario=default_scenario("islm"))
-        for i in range(3)
+        new_experiment(name=f"e{i}", scenario=default_scenario("islm")) for i in range(3)
     ]
     results = engine.run_many(experiments)
     assert len(results) == 3
@@ -47,8 +46,10 @@ def test_run_many(engine):
 def test_compare(engine):
     experiments = [
         new_experiment(name="base", scenario=default_scenario("islm")),
-        new_experiment(name="choque",
-                       scenario=default_scenario("islm").with_shocks(shocks_for("islm")[0])),
+        new_experiment(
+            name="choque",
+            scenario=default_scenario("islm").with_shocks(shocks_for("islm")[0]),
+        ),
     ]
     df = engine.compare(experiments)
     assert list(df["experiment"]) == ["base", "choque"]

@@ -11,9 +11,9 @@ def _run(shock=None, regime="Flexible"):
     scenario = default_scenario("mundell_fleming")
     metadata = dict(scenario.metadata)
     metadata["regime"] = regime
-    scenario = Scenario(model="mundell_fleming",
-                        parameters=scenario.parameters,
-                        metadata=metadata)
+    scenario = Scenario(
+        model="mundell_fleming", parameters=scenario.parameters, metadata=metadata
+    )
     model = dispatch(scenario)
     if shock is None:
         return model.solve()
@@ -33,7 +33,7 @@ def test_flexible_fiscal_innefective_on_y():
 
 
 def test_flexible_monetary_expansive():
-    baseline, final = _run(Shock("M", 0.20))
+    _baseline, final = _run(Shock("M", 0.20))
     assert final.Y == pytest.approx(630.0, rel=1e-3)
     assert final.e == pytest.approx(161.0, rel=1e-3)
 

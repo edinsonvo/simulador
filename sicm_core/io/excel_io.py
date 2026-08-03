@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 
 from ..branding import (
     AUTHOR,
-    CAMPUS,
     EMAIL,
     GITHUB,
-    INSTITUTION,
     VERSION,
     institution_line,
     signature,
@@ -49,7 +47,7 @@ def _variable_frame(result: EquilibriumResult) -> pd.DataFrame:
 
 
 def _branding_frame() -> pd.DataFrame:
-    generated = datetime.now()
+    generated = datetime.now(UTC)
     return pd.DataFrame(
         {
             "Campo": [
@@ -85,7 +83,16 @@ def result_to_excel(result: EquilibriumResult, path: str | Path) -> Path:
         [{"Multiplicador": k, "Valor": v} for k, v in metrics.multipliers.items()]
     )
     deltas_df = pd.DataFrame(
-        [{"Variable": k, "Δ absoluto": v, "Δ relativo (%)": metrics.relative_changes.get(k) * 100 if metrics.relative_changes.get(k) is not None else None} for k, v in metrics.deltas.items()]
+        [
+            {
+                "Variable": k,
+                "Δ absoluto": v,
+                "Δ relativo (%)": metrics.relative_changes.get(k) * 100
+                if metrics.relative_changes.get(k) is not None
+                else None,
+            }
+            for k, v in metrics.deltas.items()
+        ]
     )
     interpretation_df = pd.DataFrame(
         {
@@ -116,5 +123,5 @@ def result_to_excel(result: EquilibriumResult, path: str | Path) -> Path:
         writer.book.properties.creator = AUTHOR
         writer.book.properties.subject = institution_line()
         writer.book.properties.description = signature()
-        writer.book.properties.created = datetime.now()
+        writer.book.properties.created = datetime.now(UTC)
     return path

@@ -1,17 +1,17 @@
 """Motor de SICM: registro, despacho y ejecución de experimentos."""
 
-from .registry import ModelRegistry, ModelNotFoundError, register, registry
-from .dispatcher import dispatch, get_model_class, available_models, model_exists
+from .dispatcher import available_models, dispatch, get_model_class, model_exists
 from .engine import Engine
+from .registry import ModelNotFoundError, ModelRegistry, register, registry
 
 __all__ = [
-    "ModelRegistry",
+    "Engine",
     "ModelNotFoundError",
-    "register",
-    "registry",
+    "ModelRegistry",
+    "available_models",
     "dispatch",
     "get_model_class",
-    "available_models",
     "model_exists",
-    "Engine",
+    "register",
+    "registry",
 ]

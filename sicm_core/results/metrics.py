@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..experiments.scenario import Shock
@@ -34,9 +35,9 @@ class Metrics:
 
 
 def compute_metrics(
-    baseline: "Equilibrium",
-    final: "Equilibrium",
-    shocks: list["Shock"],
+    baseline: Equilibrium,
+    final: Equilibrium,
+    shocks: list[Shock],
     params_before: Mapping[str, float],
 ) -> Metrics:
     """Calcula deltas, cambios relativos y multiplicadores.

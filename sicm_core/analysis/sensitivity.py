@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 import pandas as pd
 
@@ -33,11 +33,13 @@ def one_factor_at_a_time(
             metadata=scenario.metadata,
             label=f"{parameter}={value:g}",
         )
-        experiment = new_experiment(name=f"Sensibilidad {parameter}", scenario=run_scenario)
+        experiment = new_experiment(
+            name=f"Sensibilidad {parameter}", scenario=run_scenario
+        )
         result = engine.run(experiment)
         eq = result.equilibrium
         row = {parameter: value}
-        for key in eq.keys():
+        for key in eq:
             row[key] = eq[key]
             base = baseline.get(key)
             if base:

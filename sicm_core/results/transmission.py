@@ -89,7 +89,7 @@ class Transmission:
     description: str
 
 
-def build_transmission(model_name: str, shocks: list["Shock"]) -> Transmission:
+def build_transmission(model_name: str, shocks: list[Shock]) -> Transmission:
     """Describe los canales de transmisión relevantes para el modelo."""
     channels = list(CHANNELS_BY_MODEL.get(model_name, []))
     if shocks:

@@ -11,12 +11,12 @@ if TYPE_CHECKING:
     from ..models.base_model import BaseModel
 
 
-def get_model_class(model_name: str) -> type["BaseModel"]:
+def get_model_class(model_name: str) -> type[BaseModel]:
     """Devuelve la clase registrada para ``model_name``."""
     return registry.get(model_name)
 
 
-def dispatch(scenario: "Scenario") -> "BaseModel":
+def dispatch(scenario: Scenario) -> BaseModel:
     """Construye la instancia de modelo adecuada para el escenario."""
     model_class = get_model_class(scenario.model)
     return model_class(scenario)
@@ -33,8 +33,8 @@ def model_exists(model_name: str) -> bool:
 
 __all__ = [
     "ModelNotFoundError",
-    "get_model_class",
-    "dispatch",
     "available_models",
+    "dispatch",
+    "get_model_class",
     "model_exists",
 ]

@@ -36,8 +36,9 @@ def test_four_quadrant_baseline_at_full_employment():
 
 def test_four_quadrant_long_run_returns_natural():
     base = default_scenario("four_quadrant")
-    scenario = Scenario(model="four_quadrant", parameters=base.parameters,
-                        metadata={"horizon": "largo"})
+    scenario = Scenario(
+        model="four_quadrant", parameters=base.parameters, metadata={"horizon": "largo"}
+    )
     eq = dispatch(scenario).solve()
     assert eq.Y == pytest.approx(base.parameters.Yn)
     assert eq.gap == pytest.approx(0.0, abs=1e-9)
@@ -49,17 +50,17 @@ def test_four_quadrant_long_run_returns_natural():
 def test_four_quadrant_fiscal_expansion_chain():
     base = _solve("four_quadrant")
     after = _solve("four_quadrant", G=132.0)
-    assert after.Y > base.Y          # IS -> ↑Y
-    assert after.P > base.P          # -> ↑P
-    assert after.w < base.w          # -> ↓W/P
-    assert after.N > base.N          # -> ↑N
-    assert after.W > base.W          # -> ↑W
+    assert after.Y > base.Y  # IS -> ↑Y
+    assert after.P > base.P  # -> ↑P
+    assert after.w < base.w  # -> ↓W/P
+    assert after.N > base.N  # -> ↑N
+    assert after.W > base.W  # -> ↑W
 
 
 def test_four_quadrant_monetary_expansion_chain():
     base = _solve("four_quadrant")
     after = _solve("four_quadrant", M=860.0)
-    assert after.r < base.r          # LM -> ↓i
+    assert after.r < base.r  # LM -> ↓i
     assert after.Y > base.Y
     assert after.P > base.P
     assert after.N > base.N
@@ -68,16 +69,16 @@ def test_four_quadrant_monetary_expansion_chain():
 def test_four_quadrant_productivity_chain():
     base = _solve("four_quadrant")
     after = _solve("four_quadrant", A_prod=110.0)
-    assert after.P < base.P          # AS -> ↓P
+    assert after.P < base.P  # AS -> ↓P
     assert after.Y > base.Y
-    assert after.w > base.w          # -> ↑W/P
-    assert after.W > base.W          # -> ↑W
+    assert after.w > base.w  # -> ↑W/P
+    assert after.W > base.W  # -> ↑W
 
 
 def test_four_quadrant_expectations_chain():
     base = _solve("four_quadrant")
     after = _solve("four_quadrant", Pe=1.1)
-    assert after.P > base.P          # AS -> ↑P
+    assert after.P > base.P  # AS -> ↑P
     assert after.Y < base.Y
     assert after.N < base.N
 
@@ -94,15 +95,17 @@ def test_four_quadrant_multipliers_positive():
 # ---------------------------------------------------------------------------
 def test_four_quadrant_dynamic_converges():
     base = default_scenario("four_quadrant")
-    model = dispatch(Scenario(
-        model="four_quadrant",
-        parameters=base.parameters.with_values(G=132.0),
-        metadata=base.metadata,
-    ))
+    model = dispatch(
+        Scenario(
+            model="four_quadrant",
+            parameters=base.parameters.with_values(G=132.0),
+            metadata=base.metadata,
+        )
+    )
     path = model.dynamic_simulation(periods=30, speed=0.3)
     last = path[-1]
-    assert abs(last["Y"] - last["Yn"]) < 1.0       # converge al natural
-    assert abs(last["P"] - last["Pe"]) < 1e-3      # expectativas cumplidas
+    assert abs(last["Y"] - last["Yn"]) < 1.0  # converge al natural
+    assert abs(last["P"] - last["Pe"]) < 1e-3  # expectativas cumplidas
 
 
 def test_four_quadrant_transmission_steps():

@@ -27,7 +27,7 @@ def _fmt(value: float, nd: int = 2) -> str:
     return f"{value:,.{nd}f}"
 
 
-def _shock_desc(shocks: list["Shock"]) -> str:
+def _shock_desc(shocks: list[Shock]) -> str:
     if not shocks:
         return ""
     first = shocks[0]
@@ -40,9 +40,7 @@ def _shock_desc(shocks: list["Shock"]) -> str:
     return f"{op} de {first.target} en {sign}{first.magnitude * 100:.0f}%"
 
 
-def _build_bullets(
-    baseline: "Equilibrium", final: "Equilibrium"
-) -> list[str]:
+def _build_bullets(baseline: Equilibrium, final: Equilibrium) -> list[str]:
     bullets: list[str] = []
     y0, y1 = baseline.get("Y"), final.get("Y")
     if y0 is not None and y1 is not None:
@@ -90,9 +88,7 @@ def _build_bullets(
         if b is None or f is None:
             continue
         base = b if abs(b) > _EPS else 1.0
-        bullets.append(
-            f"{label}: {_fmt(b)} → {_fmt(f)} ({(f - b) / base * 100:+.2f}%)."
-        )
+        bullets.append(f"{label}: {_fmt(b)} → {_fmt(f)} ({(f - b) / base * 100:+.2f}%).")
     return bullets
 
 
@@ -100,8 +96,8 @@ def _build_summary(
     family: str,
     direction: str,
     shock_desc: str,
-    baseline: "Equilibrium",
-    final: "Equilibrium",
+    baseline: Equilibrium,
+    final: Equilibrium,
 ) -> str:
     y0, y1 = baseline.get("Y"), final.get("Y")
     y_part = "el producto"
@@ -159,10 +155,10 @@ def _build_summary(
 
 
 def build_interpretation(
-    model: "BaseModel",
-    baseline: "Equilibrium",
-    final: "Equilibrium",
-    shocks: list["Shock"],
+    model: BaseModel,
+    baseline: Equilibrium,
+    final: Equilibrium,
+    shocks: list[Shock],
 ) -> Interpretation:
     """Genera la interpretación del resultado del experimento."""
     y0, y1 = baseline.get("Y"), final.get("Y")

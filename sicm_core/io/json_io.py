@@ -59,7 +59,12 @@ def shock_to_dict(shock: Shock) -> dict:
 
 
 def equilibrium_to_dict(eq: Equilibrium) -> dict:
-    return {_TAG: "Equilibrium", "model": eq.model, "variables": eq.as_dict(), "label": eq.label}
+    return {
+        _TAG: "Equilibrium",
+        "model": eq.model,
+        "variables": eq.as_dict(),
+        "label": eq.label,
+    }
 
 
 def result_to_dict(result: EquilibriumResult) -> dict:

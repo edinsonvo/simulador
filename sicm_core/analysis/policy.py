@@ -60,8 +60,6 @@ def policy_description(policy: str) -> str:
     return POLICIES[policy].description
 
 
-def simulate_policy(
-    scenario: Scenario, policy: str, magnitude: float = 0.10
-) -> Scenario:
+def simulate_policy(scenario: Scenario, policy: str, magnitude: float = 0.10) -> Scenario:
     """Devuelve un escenario con la política aplicada como choque."""
     return scenario.with_shocks(policy_shock(policy, magnitude))

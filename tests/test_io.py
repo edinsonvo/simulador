@@ -20,14 +20,17 @@ from sicm_core.io import (
 def _completed_experiment():
     engine = Engine()
     scenario = default_scenario("islm").with_shocks(shocks_for("islm")[0])
-    experiment = new_experiment(name="G+10%", description="test", author="qa",
-                                scenario=scenario)
+    experiment = new_experiment(
+        name="G+10%", description="test", author="qa", scenario=scenario
+    )
     engine.run(experiment)
     return experiment
 
 
 def test_scenario_roundtrip():
-    scenario = default_scenario("mundell_fleming").with_shocks(shocks_for("mundell_fleming")[0])
+    scenario = default_scenario("mundell_fleming").with_shocks(
+        shocks_for("mundell_fleming")[0]
+    )
     restored = scenario_from_dict(scenario_to_dict(scenario))
     assert restored.model == scenario.model
     assert len(restored.shocks) == 1

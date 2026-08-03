@@ -32,8 +32,9 @@ def test_as_ad_baseline():
 
 def test_as_ad_long_run_returns_natural():
     base = default_scenario("as_ad")
-    scenario = Scenario(model="as_ad", parameters=base.parameters,
-                        metadata={"horizon": "largo"})
+    scenario = Scenario(
+        model="as_ad", parameters=base.parameters, metadata={"horizon": "largo"}
+    )
     eq = dispatch(scenario).solve()
     assert eq.Y == pytest.approx(base.parameters.Yn)
     assert eq.gap == pytest.approx(0.0, abs=1e-9)
@@ -78,8 +79,9 @@ def test_islm_bp_monetary_expansion():
 
 def test_islm_bp_fixed_regime_anchors_exchange_rate():
     base = default_scenario("islm_bp")
-    scenario = Scenario(model="islm_bp", parameters=base.parameters,
-                        metadata={"regime": "fijo"})
+    scenario = Scenario(
+        model="islm_bp", parameters=base.parameters, metadata={"regime": "fijo"}
+    )
     eq = dispatch(scenario).solve()
     assert eq.e == pytest.approx(base.parameters.e_bar)
 
@@ -126,9 +128,11 @@ def test_new_classical_surprise_moves_output():
 
 def test_new_classical_anticipated_money_neutral():
     base = default_scenario("new_classical")
-    scenario = Scenario(model="new_classical",
-                        parameters=base.parameters.with_values(M=1100.0),
-                        metadata={"expectativas": "anticipadas"})
+    scenario = Scenario(
+        model="new_classical",
+        parameters=base.parameters.with_values(M=1100.0),
+        metadata={"expectativas": "anticipadas"},
+    )
     eq = dispatch(scenario).solve()
     assert eq.Y == pytest.approx(base.parameters.Yn)
     assert eq.P == pytest.approx(1.1, rel=1e-3)
@@ -177,10 +181,18 @@ def test_integrated_money_neutral_in_real_terms():
 # ---------------------------------------------------------------------------
 # Interpretación de los nuevos modelos
 # ---------------------------------------------------------------------------
-@pytest.mark.parametrize("name", [
-    "as_ad", "islm_bp", "new_keynesian", "new_classical", "okun",
-    "phillips", "integrated",
-])
+@pytest.mark.parametrize(
+    "name",
+    [
+        "as_ad",
+        "islm_bp",
+        "new_keynesian",
+        "new_classical",
+        "okun",
+        "phillips",
+        "integrated",
+    ],
+)
 def test_interpretation_builds_for_new_models(name):
     scenario = default_scenario(name)
     model = dispatch(scenario)
@@ -195,6 +207,11 @@ def test_interpretation_builds_for_new_models(name):
 def test_all_new_models_registered():
     names = set(registry.names())
     assert {
-        "as_ad", "islm_bp", "new_keynesian", "new_classical",
-        "okun", "phillips", "integrated",
+        "as_ad",
+        "islm_bp",
+        "new_keynesian",
+        "new_classical",
+        "okun",
+        "phillips",
+        "integrated",
     } <= names

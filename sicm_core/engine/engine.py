@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import time
-from typing import Iterable
+from collections.abc import Iterable
 
 import pandas as pd
 
@@ -11,7 +10,9 @@ from ..experiments.experiment import Experiment, new_experiment
 from ..experiments.scenario import Scenario
 from ..results.equilibrium import EquilibriumResult, build_result
 from .dispatcher import dispatch
-from .registry import ModelRegistry, registry as default_registry
+from .errors import SimulationError, validate_parameters
+from .registry import ModelNotFoundError, ModelRegistry
+from .registry import registry as default_registry
 
 
 class Engine:
@@ -37,6 +38,7 @@ class Engine:
         experiment.status = "running"
         try:
             model = dispatch(experiment.scenario)
+            validate_parameters(model.name, model.parameters)
             baseline = model.solve()
             shocks = list(experiment.scenario.shocks)
             if shocks:
@@ -47,11 +49,18 @@ class Engine:
             experiment.result = result
             experiment.status = "completed"
             return result
-        except Exception as exc:  # pragma: no cover - control de estado
+        except (SimulationError, ModelNotFoundError):
             experiment.status = "failed"
             raise
+        except Exception as exc:  # pragma: no cover - control de estado
+            experiment.status = "failed"
+            raise SimulationError(
+                f"No se pudo resolver el modelo «{experiment.scenario.model}»: {exc}"
+            ) from exc
 
-    def run_scenario(self, scenario: Scenario, name: str = "Simulación") -> EquilibriumResult:
+    def run_scenario(
+        self, scenario: Scenario, name: str = "Simulación"
+    ) -> EquilibriumResult:
         """Ejecuta un escenario ad hoc sin construir un experimento explícito."""
         experiment = new_experiment(name=name, scenario=scenario)
         return self.run(experiment)
