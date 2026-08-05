@@ -42,7 +42,6 @@ class MundellFlemingModel(BaseModel):
     def solve(self) -> Equilibrium:
         p = self.parameters
         r_w = p.r_w
-        inv = p.I0 - _PCT * p.b * r_w
         if self._is_fixed():
             nx = p.NX0 - p.theta * p.e_bar
             num = p.C0 - p.c * p.T + p.I0 - _PCT * p.b * r_w + p.G + p.NX0
@@ -54,7 +53,6 @@ class MundellFlemingModel(BaseModel):
             num = p.C0 - p.c * p.T + p.I0 - _PCT * p.b * r_w + p.G + p.NX0
             e = (num - (1 - p.c) * y) / p.theta
             money = p.M
-        cons = p.C0 + p.c * (y - p.T)
         nx = p.NX0 - p.theta * e
         cf = 0.0  # tasa doméstica = tasa mundial ⇒ flujo de capital neto nulo
         return Equilibrium(

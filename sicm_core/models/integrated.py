@@ -41,8 +41,15 @@ class IntegratedModel(BaseModel):
     def _output(self) -> float:
         p = self.parameters
         if self._is_fixed():
-            num = (p.C0 - p.c * p.T + p.I0 - _PCT * p.b * p.r_w
-                   + p.G + p.NX0 + p.theta * p.e_bar)
+            num = (
+                p.C0
+                - p.c * p.T
+                + p.I0
+                - _PCT * p.b * p.r_w
+                + p.G
+                + p.NX0
+                + p.theta * p.e_bar
+            )
             return num / max(1 - p.c + p.m, 1e-9)
         num = p.C0 - p.c * p.T + p.I0 - _PCT * p.b * p.r_w + p.G
         return num / max(1 - p.c, 1e-9)
@@ -99,8 +106,11 @@ class IntegratedModel(BaseModel):
             from ..experiments.scenario import Scenario
 
             shocked = self.__class__(
-                Scenario(model=self.name, parameters=params,
-                         metadata=dict(self.scenario.metadata))
+                Scenario(
+                    model=self.name,
+                    parameters=params,
+                    metadata=dict(self.scenario.metadata),
+                )
             )
             out[f"dY_d{target}"] = float(shocked.solve()["Y"] - base) / delta
         return out
@@ -115,7 +125,9 @@ class IntegratedModel(BaseModel):
         r = (num - (1 - p.c) * y) / (_PCT * b)
         return y, r
 
-    def lm_curve(self, y_values, price: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def lm_curve(
+        self, y_values, price: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Curva LM* en el plano (Y, r) evaluada al nivel de precios dado."""
         p = self.parameters
         h = max(p.h, 1e-6)
@@ -132,7 +144,9 @@ class IntegratedModel(BaseModel):
         prices = p.M / denom
         return y, prices
 
-    def as_curve(self, y_values, price: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def as_curve(
+        self, y_values, price: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Oferta agregada de corto plazo (horizontal en el precio dado)."""
         y = np.asarray(y_values, dtype=float)
         p_star = price if price is not None else self._price(self._output())

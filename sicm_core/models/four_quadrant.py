@@ -71,7 +71,9 @@ class FourQuadrantModel(BaseModel):
         r = (self._A0() - (1 - p.c) * y) / (_PCT * b)
         return y, r
 
-    def lm_curve(self, y_values, price: float | None = None) -> tuple[np.ndarray, np.ndarray]:
+    def lm_curve(
+        self, y_values, price: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """LM: i(Y) = (k·Y - M/P) / h evaluada al nivel de precios dado."""
         p = self.parameters
         h = max(p.h, 1e-6)
@@ -198,15 +200,19 @@ class FourQuadrantModel(BaseModel):
             from ..experiments.scenario import Scenario
 
             shocked = self.__class__(
-                Scenario(model=self.name, parameters=params,
-                         metadata=dict(self.scenario.metadata))
+                Scenario(
+                    model=self.name,
+                    parameters=params,
+                    metadata=dict(self.scenario.metadata),
+                )
             )
             out[f"dY_d{target}"] = float(shocked.solve()["Y"] - base) / delta
         return out
 
     # -- Dinámica y transmisión -------------------------------------------
-    def dynamic_simulation(self, periods: int = 20,
-                           speed: float = 0.3) -> list[Equilibrium]:
+    def dynamic_simulation(
+        self, periods: int = 20, speed: float = 0.3
+    ) -> list[Equilibrium]:
         """Camino de ajuste con expectativas adaptativas.
 
         Cada periodo resuelve el equilibrio de corto plazo y actualiza la
@@ -220,8 +226,9 @@ class FourQuadrantModel(BaseModel):
         for _ in range(periods):
             params = self.parameters.with_values(Pe=pe)
             model = self.__class__(
-                Scenario(model=self.name, parameters=params,
-                         metadata={"horizon": "corto"})
+                Scenario(
+                    model=self.name, parameters=params, metadata={"horizon": "corto"}
+                )
             )
             eq = model.solve()
             path.append(eq)
@@ -229,8 +236,9 @@ class FourQuadrantModel(BaseModel):
         return path
 
 
-def transmission_steps(shock_target: str, baseline: "Equilibrium",
-                       final: "Equilibrium") -> list[dict]:
+def transmission_steps(
+    shock_target: str, baseline: Equilibrium, final: Equilibrium
+) -> list[dict]:
     """Pasos del mecanismo de transmisión del choque entre cuadrantes.
 
     Devuelve una lista de ``{cuadrante, titulo, detalle, valor}`` que

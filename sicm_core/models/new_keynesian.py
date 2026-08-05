@@ -81,8 +81,11 @@ class NewKeynesianModel(BaseModel):
             from ..experiments.scenario import Scenario
 
             shocked = self.__class__(
-                Scenario(model=self.name, parameters=params,
-                         metadata=dict(self.scenario.metadata))
+                Scenario(
+                    model=self.name,
+                    parameters=params,
+                    metadata=dict(self.scenario.metadata),
+                )
             )
             out[f"dY_d{target}"] = float(shocked.solve()["Y"] - base) / delta
         return out
