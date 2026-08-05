@@ -6,8 +6,6 @@ Nuevo flujo:
 
 from __future__ import annotations
 
-import io
-import json
 import sys
 from pathlib import Path
 
@@ -21,20 +19,6 @@ if str(_ROOT) not in sys.path:
 import pandas as pd
 import streamlit as st
 
-from sicm_core import Engine, registry
-from sicm_core.analysis.shocks import apply_shocks
-from sicm_core.analysis.sensitivity import one_factor_at_a_time
-from sicm_core.branding import (
-    AUTHOR,
-    EMAIL,
-    GITHUB,
-    VERSION,
-    institution_line,
-)
-from sicm_core.engine.dispatcher import dispatch
-from sicm_core.experiments import default_scenario, new_experiment
-from sicm_core.experiments.scenario import Scenario
-from sicm_core.io import ExperimentStore, result_to_excel
 from research_lab.reports.pdf import generate_pdf_report
 from research_lab.ui.controls import (
     build_scenario,
@@ -44,18 +28,41 @@ from research_lab.ui.controls import (
     regime_selector,
     shock_selector,
 )
-from research_lab.visualization.plots import _LABELS, plot_comparison, plot_result
+from research_lab.visualization.plots import _LABELS, plot_result
+from sicm_core import Engine, registry
+from sicm_core.analysis.sensitivity import one_factor_at_a_time
+from sicm_core.analysis.shocks import apply_shocks
+from sicm_core.branding import (
+    AUTHOR,
+    EMAIL,
+    GITHUB,
+    VERSION,
+    institution_line,
+)
+from sicm_core.engine.dispatcher import dispatch
+from sicm_core.engine.errors import SimulationError
+from sicm_core.experiments import default_scenario, new_experiment
+from sicm_core.experiments.scenario import Scenario
+from sicm_core.io import ExperimentStore, result_to_excel
 
-st.set_page_config(page_title="SICM Research Lab", page_icon="📈",
-                   layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="SICM Research Lab",
+    page_icon="📈",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
 ASSETS_DIR = Path(__file__).parent / "assets"
 LOGO_PATH = ASSETS_DIR / "escudo_unal_color.png"
 
 LABELS = registry.labels()
 STORE_DIR = Path(__file__).parent / "data" / "experiments"
-PAGES = ["📊 Dashboard", "🧪 Laboratorio de Sensibilidad", "💾 Experimentos",
-         "📚 Documentación"]
+PAGES = [
+    "📊 Dashboard",
+    "🧪 Laboratorio de Sensibilidad",
+    "💾 Experimentos",
+    "📚 Documentación",
+]
 
 PAGES_MAP = {
     "📊 Dashboard": "dashboard",
@@ -118,7 +125,9 @@ def _sidebar():
         st.divider()
         if PAGES_MAP[page] == "dashboard":
             model = st.selectbox(
-                "Modelo", list(LABELS), key="model",
+                "Modelo",
+                list(LABELS),
+                key="model",
                 format_func=lambda m: LABELS[m],
             )
             params = default_scenario(model).parameters
@@ -155,7 +164,13 @@ def _run_experiment():
         author="Research Lab",
         scenario=scenario,
     )
-    result = _engine().run(experiment)
+    try:
+        result = _engine().run(experiment)
+    except SimulationError as exc:
+        st.session_state.pop("result", None)
+        st.session_state.pop("experiment", None)
+        st.error(f"⚠️ {exc}")
+        return
     st.session_state["experiment"] = experiment
     st.session_state["result"] = result
     st.session_state["result_key"] = experiment.id
@@ -195,12 +210,41 @@ def _dashboard_metrics(result):
             _metric_column(result, "pi", "Inflación (π)", lambda v: f"{v * 100:.2f}%")
 
 
+def _executive_summary(result):
+    """Banner con la lectura ejecutiva y las cuatro mayores variaciones."""
+    direction = result.interpretation.direction
+    emoji = {"expansivo": "🟢", "contractivo": "🔴", "neutro": "⚪"}[direction]
+    top = sorted(
+        (
+            (key, info["delta"])
+            for key, info in result.variable_table().items()
+            if info["delta"] is not None
+        ),
+        key=lambda kv: abs(kv[1]),
+        reverse=True,
+    )[:4]
+    chips = " &nbsp;·&nbsp; ".join(
+        f"<b>{_LABELS.get(k, k)}</b> {v:+,.2f}" for k, v in top
+    )
+    st.markdown(
+        f"""
+        <div style="background:#eef3f8;border-left:4px solid #2f6fb3;
+                    padding:0.8rem 1rem;border-radius:6px;margin-bottom:1rem;">
+            <b>Resumen ejecutivo</b> {emoji} {result.interpretation.summary}
+            <div style="margin-top:0.4rem;font-size:0.95rem;">{chips}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def page_dashboard():
     st.title("📊 Dashboard de Resultados")
     result = st.session_state.get("result")
     if result is None:
-        st.info("Configure el escenario en la barra lateral y pulse "
-                "«Ejecutar experimento».")
+        st.info(
+            "Configure el escenario en la barra lateral y pulse «Ejecutar experimento»."
+        )
         return
 
     model = st.session_state["experiment"].scenario.model
@@ -208,6 +252,7 @@ def page_dashboard():
     emoji = {"expansivo": "🟢", "contractivo": "🔴", "neutro": "⚪"}[direction]
 
     st.subheader(f"{LABELS[model]} · efecto {direction} {emoji}")
+    _executive_summary(result)
     _dashboard_metrics(result)
 
     st.divider()
@@ -217,8 +262,7 @@ def page_dashboard():
     if scenario.shocks:
         shocked_params, _ = apply_shocks(scenario.parameters, scenario.shocks)
         final_model = dispatch(
-            Scenario(model=model, parameters=shocked_params,
-                     metadata=scenario.metadata)
+            Scenario(model=model, parameters=shocked_params, metadata=scenario.metadata)
         )
 
     col1, col2 = st.columns([3, 2])
@@ -238,7 +282,7 @@ def page_dashboard():
         _dashboard_four_quadrant(result, final_model or base_model)
 
     with st.expander("🗂️ Leyenda de variables utilizadas"):
-        for key in result.equilibrium.keys():
+        for key in result.equilibrium:
             st.markdown(f"- **`{key}`** — {_LABELS.get(key, key)}")
 
     st.divider()
@@ -263,21 +307,28 @@ def page_dashboard():
             import tempfile
 
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-                path = generate_pdf_report(result, tmp.name,
-                                           title="Reporte SICM Research Lab")
+                path = generate_pdf_report(
+                    result, tmp.name, title="Reporte SICM Research Lab"
+                )
                 st.download_button(
-                    "⬇️ PDF", open(path, "rb").read(), "reporte_sicm.pdf",
-                    "application/pdf", key="dl_pdf")
+                    "⬇️ PDF",
+                    Path(path).read_bytes(),
+                    "reporte_sicm.pdf",
+                    "application/pdf",
+                    key="dl_pdf",
+                )
         if c2.button("📊 Descargar Excel", key="export_xlsx"):
             import tempfile
 
             with tempfile.NamedTemporaryFile(suffix=".xlsx", delete=False) as tmp:
                 result_to_excel(result, tmp.name)
                 st.download_button(
-                    "⬇️ Excel", open(tmp.name, "rb").read(),
+                    "⬇️ Excel",
+                    Path(tmp.name).read_bytes(),
                     "resultado_sicm.xlsx",
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_xlsx")
+                    key="dl_xlsx",
+                )
         if c3.button("🗂️ Guardar en el almacén", key="store_save"):
             _store().save(st.session_state["experiment"])
             st.success(f"Guardado: {st.session_state['experiment'].id}")
@@ -287,11 +338,11 @@ def page_dashboard():
 
 def _dashboard_four_quadrant(result, final_model):
     """Secciones específicas del modelo de cuatro cuadrantes."""
-    from sicm_core.models.four_quadrant import transmission_steps
     from research_lab.visualization.plots import (
         plot_convergence,
         plot_transmission_mechanism,
     )
+    from sicm_core.models.four_quadrant import transmission_steps
 
     scenario = st.session_state["experiment"].scenario
 
@@ -300,8 +351,7 @@ def _dashboard_four_quadrant(result, final_model):
     if scenario.shocks:
         target = scenario.shocks[0].target
         steps = transmission_steps(target, result.baseline, result.equilibrium)
-        fig = plot_transmission_mechanism(steps, result.baseline,
-                                          result.equilibrium)
+        fig = plot_transmission_mechanism(steps, result.baseline, result.equilibrium)
         st.plotly_chart(fig, width="stretch")
         for paso in steps:
             origen = " · **origen del choque**" if paso["valor"] == "origen" else ""
@@ -313,10 +363,10 @@ def _dashboard_four_quadrant(result, final_model):
     st.subheader("⏳ Convergencia dinámica (expectativas adaptativas)")
     c1, c2 = st.columns([1, 2])
     with c1:
-        speed = st.slider("Velocidad de ajuste de P^e", 0.05, 0.9, 0.3, 0.05,
-                          key="fq_speed")
-        periods = st.slider("Horizonte (periodos)", 5, 40, 20, 5,
-                            key="fq_periods")
+        speed = st.slider(
+            "Velocidad de ajuste de P^e", 0.05, 0.9, 0.3, 0.05, key="fq_speed"
+        )
+        periods = st.slider("Horizonte (periodos)", 5, 40, 20, 5, key="fq_periods")
     with c2:
         fig = plot_convergence(final_model, periods=periods, speed=speed)
         st.plotly_chart(fig, width="stretch")
@@ -338,7 +388,9 @@ def _dashboard_four_quadrant(result, final_model):
 
 def page_sensitivity():
     st.title("🧪 Laboratorio de Sensibilidad")
-    st.caption("Análisis unifactorial: varía un parámetro y mide el efecto en el equilibrio.")
+    st.caption(
+        "Análisis unifactorial: varía un parámetro y mide el efecto en el equilibrio."
+    )
     if "experiment" not in st.session_state:
         st.info("Ejecute primero un experimento en el Dashboard.")
         return
@@ -385,12 +437,16 @@ def page_sensitivity():
         import plotly.graph_objects as go
 
         fig = go.Figure(
-            go.Scatter(x=df[param].tolist(), y=df[ycol].tolist(),
-                       mode="lines+markers", name=ycol)
+            go.Scatter(
+                x=df[param].tolist(), y=df[ycol].tolist(), mode="lines+markers", name=ycol
+            )
         )
-        fig.update_layout(title=f"Sensibilidad de {ycol} a {param}",
-                          xaxis_title=param, yaxis_title=ycol,
-                          template="plotly_white")
+        fig.update_layout(
+            title=f"Sensibilidad de {ycol} a {param}",
+            xaxis_title=param,
+            yaxis_title=ycol,
+            template="plotly_white",
+        )
         st.plotly_chart(fig, width="stretch")
 
     _footer()
@@ -536,7 +592,9 @@ def page_docs():
     for model, shocks in SHOCK_CATALOG.items():
         st.write(f"**{LABELS.get(model, model)}**")
         for spec in shocks:
-            st.write(f"- `{spec.target}` ± {spec.magnitude * 100:.0f}% · {spec.description}")
+            st.write(
+                f"- `{spec.target}` ± {spec.magnitude * 100:.0f}% · {spec.description}"
+            )
     _footer()
 
 

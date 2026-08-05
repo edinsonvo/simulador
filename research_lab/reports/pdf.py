@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -64,7 +64,7 @@ def _page_footer(canvas, doc):
     canvas.drawCentredString(
         doc.pagesize[0] / 2.0,
         y - 4 * mm,
-        f"{signature()} · {datetime.now():%Y-%m-%d %H:%M}",
+        f"{signature()} · {datetime.now(UTC):%Y-%m-%d %H:%M}",
     )
     canvas.setFont("Helvetica-Oblique", 7)
     canvas.drawCentredString(
@@ -90,8 +90,9 @@ def _build_header(styles):
         f"Simulador Integral de Choques Macroeconómicos (SICM) · v{VERSION}<br/>"
         f"{AUTHOR} · {EMAIL} · {GITHUB}"
     )
-    header = Table([[image, Paragraph(text, styles["SICMHeader"])]],
-                   colWidths=[32 * mm, 148 * mm])
+    header = Table(
+        [[image, Paragraph(text, styles["SICMHeader"])]], colWidths=[32 * mm, 148 * mm]
+    )
     header.setStyle(
         TableStyle(
             [
@@ -133,17 +134,37 @@ def generate_pdf_report(
 
     story.append(Paragraph("Resumen", styles["Heading2"]))
     story.append(Paragraph(result.interpretation.summary, styles["BodyText"]))
+    top_deltas = sorted(
+        (
+            (key, info["delta"])
+            for key, info in result.variable_table().items()
+            if info["delta"] is not None
+        ),
+        key=lambda kv: abs(kv[1]),
+        reverse=True,
+    )[:4]
+    if top_deltas:
+        story.append(Spacer(1, 6))
+        story.append(
+            Paragraph(
+                "Principales variaciones: "
+                + "; ".join(f"{key} {delta:+.4f}" for key, delta in top_deltas),
+                styles["BodyText"],
+            )
+        )
     story.append(Spacer(1, 8))
 
     story.append(Paragraph("Equilibrio", styles["Heading2"]))
     rows = [["Variable", "Base", "Final", "Δ absoluto"]]
     for key, info in result.variable_table().items():
-        rows.append([
-            key,
-            f"{info['base']:.4f}" if info["base"] is not None else "—",
-            f"{info['final']:.4f}",
-            f"{info['delta']:+.4f}" if info["delta"] is not None else "—",
-        ])
+        rows.append(
+            [
+                key,
+                f"{info['base']:.4f}" if info["base"] is not None else "—",
+                f"{info['final']:.4f}",
+                f"{info['delta']:+.4f}" if info["delta"] is not None else "—",
+            ]
+        )
     table = Table(rows, colWidths=[40, 60, 60, 60])
     table.setStyle(
         TableStyle(
@@ -179,10 +200,12 @@ def generate_pdf_report(
     story.append(Paragraph(result.transmission.description, styles["BodyText"]))
 
     story.append(Spacer(1, 12 * mm))
-    story.append(Paragraph(
-        f"Documento generado por {signature()} el {datetime.now():%Y-%m-%d %H:%M}.",
-        styles["SICMHeader"],
-    ))
+    story.append(
+        Paragraph(
+            f"Documento generado por {signature()} el {datetime.now(UTC):%Y-%m-%d %H:%M}.",
+            styles["SICMHeader"],
+        )
+    )
 
     doc.build(story, onFirstPage=_page_footer, onLaterPages=_page_footer)
     return path
