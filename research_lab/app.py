@@ -378,8 +378,8 @@ def _dashboard_four_quadrant(result, final_model):
             |---|---|---|---|
             | **II** (superior izquierdo) | IS-LM | (Y, i) | Equilibrio de bienes (IS) y dinero (LM) |
             | **III** (inferior izquierdo) | AD-AS | (Y, P) | DA derivada de IS-LM vs. OA de corto plazo |
-            | **IV** (inferior derecho) | Demanda de trabajo | (N, W/P) | W/P = PMgL (productividad marginal) |
-            | **I** (superior derecho) | Oferta de trabajo | (N, W) | W ajusta según N^s = N₀ + η·(W/P^e) |
+            | **IV** (inferior derecho) | Mercado laboral | (N, W/P) | N^d: W/P = PMgL (pendiente negativa); N^s: pendiente positiva |
+            | **I** (superior derecho) | Mercado laboral | (N, W) | N^s = N₀ + η·(W/P^e) (pendiente positiva); N^d: W = P·PMgL (pendiente negativa) |
 
             **Lazo de retroalimentación:** II → Y → III → P → IV → W/P → N → I → W → II.
             """

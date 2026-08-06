@@ -429,6 +429,44 @@ def plot_integrated(model, final_model=None) -> go.Figure:
     return fig
 
 
+def _labor_zoom_range(models) -> tuple[tuple, tuple, tuple]:
+    """Rangos de ejes centrados en el cruce de equilibrio de los planos
+    laborales, de modo que el efecto del choque sea visible a pesar de que
+    los desplazamientos de salarios y empleo son pequeños."""
+    eqs = [m.solve() for m in models]
+    ns = [eq["N"] for eq in eqs]
+    nlo, nhi = min(ns), max(ns)
+    span = max(nhi - nlo, 1.5)
+    pad = 0.45 * span
+    nlo, nhi = nlo - pad, nhi + pad
+    nn = np.linspace(nlo, nhi, 120)
+    nominal: list[np.ndarray] = []
+    real: list[np.ndarray] = []
+    for mdl, eq in zip(models, eqs):
+        p = eq["P"]
+        for _, w in (
+            mdl.labor_supply_curve(nn),
+            mdl.labor_demand_curve_nominal(nn, price=p),
+        ):
+            nominal.append(w[np.isfinite(w) & (w >= 0)])
+        for _, w in (
+            mdl.labor_supply_curve_real(nn, price=p),
+            mdl.labor_demand_curve(nn),
+        ):
+            real.append(w[np.isfinite(w) & (w >= 0)])
+
+    def _span(arrays: list[np.ndarray], floor: float) -> tuple[float, float]:
+        vals = np.concatenate(arrays)
+        if vals.size == 0:
+            return (0.0, 1.0)
+        lo, hi = float(vals.min()), float(vals.max())
+        hspan = max(hi - lo, floor)
+        hpad = 0.05 * hspan
+        return (lo - hpad, hi + hpad)
+
+    return (nlo, nhi), _span(nominal, 1e-3), _span(real, 1e-3)
+
+
 def plot_four_quadrant(model, final_model=None) -> go.Figure:
     """Los cuatro cuadrantes interconectados: IS-LM, oferta de trabajo,
     AD-AS y demanda de trabajo."""
@@ -437,9 +475,9 @@ def plot_four_quadrant(model, final_model=None) -> go.Figure:
         cols=2,
         subplot_titles=(
             "Cuadrante II · IS-LM (Y, i)",
-            "Cuadrante I · Oferta de trabajo (N, W)",
+            "Cuadrante I · Mercado laboral (N, W)",
             "Cuadrante III · AD-AS (Y, P)",
-            "Cuadrante IV · Demanda de trabajo (N, W/P)",
+            "Cuadrante IV · Mercado laboral (N, W/P)",
         ),
     )
     y_eq = model.solve()["Y"]
@@ -468,6 +506,10 @@ def plot_four_quadrant(model, final_model=None) -> go.Figure:
         fig.add_trace(
             _curve_trace(n[mask], w[mask], f"N^s · {label}", color, "dash"), row=1, col=2
         )
+        n, w = mdl.labor_demand_curve_nominal(ns, price=e["P"])
+        fig.add_trace(
+            _curve_trace(n, w, f"N^d (W) · {label}", color, "dot"), row=1, col=2
+        )
         fig.add_trace(
             _equilibrium_star(e["N"], e["W"], f"Eq · {label.lower()}", color),
             row=1,
@@ -486,6 +528,13 @@ def plot_four_quadrant(model, final_model=None) -> go.Figure:
 
         n, w = mdl.labor_demand_curve(ns)
         fig.add_trace(_curve_trace(n, w, f"N^d · {label}", color, "solid"), row=2, col=2)
+        n, w = mdl.labor_supply_curve_real(ns, price=e["P"])
+        mask = w >= 0
+        fig.add_trace(
+            _curve_trace(n[mask], w[mask], f"N^s (W/P) · {label}", color, "dash"),
+            row=2,
+            col=2,
+        )
         fig.add_trace(
             _equilibrium_star(e["N"], e["w"], f"Eq · {label.lower()}", color),
             row=2,
@@ -499,12 +548,19 @@ def plot_four_quadrant(model, final_model=None) -> go.Figure:
     )
     fig.update_xaxes(title_text="Producción (Y)", row=1, col=1)
     fig.update_yaxes(title_text="Tasa (i, %)", row=1, col=1)
-    fig.update_xaxes(title_text="Empleo (N)", row=1, col=2)
-    fig.update_yaxes(title_text="Salario nominal (W)", row=1, col=2)
     fig.update_xaxes(title_text="Producción (Y)", row=2, col=1)
     fig.update_yaxes(title_text="Precios (P)", row=2, col=1)
-    fig.update_xaxes(title_text="Empleo (N)", row=2, col=2)
-    fig.update_yaxes(title_text="Salario real (W/P)", row=2, col=2)
+    (nlo, nhi), (wnom_lo, wnom_hi), (wreal_lo, wreal_hi) = _labor_zoom_range(
+        [model] + ([final_model] if final_model is not None else [])
+    )
+    fig.update_xaxes(title_text="Empleo (N)", row=1, col=2, range=(nlo, nhi))
+    fig.update_yaxes(
+        title_text="Salario nominal (W)", row=1, col=2, range=(wnom_lo, wnom_hi)
+    )
+    fig.update_xaxes(title_text="Empleo (N)", row=2, col=2, range=(nlo, nhi))
+    fig.update_yaxes(
+        title_text="Salario real (W/P)", row=2, col=2, range=(wreal_lo, wreal_hi)
+    )
     return fig
 
 
