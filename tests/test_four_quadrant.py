@@ -1,5 +1,6 @@
 """Tests del modelo de equilibrio general de cuatro cuadrantes."""
 
+import numpy as np
 import pytest
 
 from sicm_core.engine import dispatch
@@ -88,6 +89,34 @@ def test_four_quadrant_multipliers_positive():
     mult = m.multipliers
     assert mult["dY_dG"] > 0
     assert mult["dY_dM"] > 0
+
+
+# ---------------------------------------------------------------------------
+# Curvas del mercado laboral (cuadrantes IV y I)
+# ---------------------------------------------------------------------------
+def test_four_quadrant_real_wage_supply_positive_slope():
+    mdl = dispatch(default_scenario("four_quadrant"))
+    eq = mdl.solve()
+    _, w = mdl.labor_supply_curve_real(np.array([90.0, 100.0, 110.0]), price=eq.P)
+    assert np.all(np.diff(w) > 0)  # pendiente positiva en el plano (N, W/P)
+    assert w[1] == pytest.approx(eq.w, rel=1e-9)  # pasa por el equilibrio en W/P
+
+
+def test_four_quadrant_nominal_demand_negative_slope():
+    mdl = dispatch(default_scenario("four_quadrant"))
+    eq = mdl.solve()
+    _, w = mdl.labor_demand_curve_nominal(np.array([90.0, 100.0, 110.0]), price=eq.P)
+    assert np.all(np.diff(w) < 0)  # pendiente negativa en el plano (N, W)
+    assert w[1] == pytest.approx(eq.W, rel=1e-9)  # pasa por el equilibrio en W
+
+
+def test_four_quadrant_labor_curves_match_equilibrium():
+    mdl = dispatch(default_scenario("four_quadrant"))
+    eq = mdl.solve()
+    _, w_real = mdl.labor_supply_curve_real(np.array([eq.Ns]), price=eq.P)
+    assert np.allclose(w_real, eq.w, rtol=1e-9)  # oferta real en N^s
+    _, w_nom = mdl.labor_demand_curve_nominal(np.array([eq.N]), price=eq.P)
+    assert np.allclose(w_nom, eq.W, rtol=1e-9)  # demanda nominal en N^d
 
 
 # ---------------------------------------------------------------------------

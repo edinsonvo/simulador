@@ -91,6 +91,37 @@ def test_plot_transmission_mechanism():
     assert len(fig.layout.annotations) >= 8
 
 
+def test_plot_four_quadrant_has_positive_slope_labor_curves():
+    base, final = _models("four_quadrant")
+    fig = plot_four_quadrant(base, final)
+    names = {t.name for t in fig.data}
+    assert "N^s · Base" in names  # pendiente positiva en (N, W), cuadrante I
+    assert "N^d (W) · Base" in names  # demanda nominal en (N, W), cuadrante I
+    assert "N^d · Base" in names  # pendiente negativa en (N, W/P), cuadrante IV
+    assert "N^s (W/P) · Base" in names  # pendiente positiva en (N, W/P), cuadrante IV
+
+
+def test_plot_four_quadrant_zooms_labor_subplots():
+    base, final = _models("four_quadrant")
+    fig = plot_four_quadrant(base, final)
+    n_lo, n_hi = fig.layout.xaxis2.range
+    assert n_lo < n_hi < 160  # ventana centrada en el equilibrio, no el rango completo
+    assert fig.layout.xaxis4.range == (n_lo, n_hi)
+    assert fig.layout.yaxis2.range is not None
+    assert fig.layout.yaxis4.range is not None
+
+
+def test_plot_four_quadrant_shock_effect_visible():
+    base, final = _models("four_quadrant")
+    fig = plot_four_quadrant(base, final)
+    n_lo, n_hi = fig.layout.xaxis2.range
+    w_lo, w_hi = fig.layout.yaxis2.range
+    eq_b, eq_f = base.solve(), final.solve()
+    assert eq_b.N != eq_f.N  # el choque mueve el empleo de equilibrio
+    assert n_lo <= min(eq_b.N, eq_f.N) and max(eq_b.N, eq_f.N) <= n_hi
+    assert w_lo <= min(eq_b.W, eq_f.W) and max(eq_b.W, eq_f.W) <= w_hi
+
+
 def test_plot_convergence():
     base, _ = _models("four_quadrant")
     fig = plot_convergence(base, periods=10, speed=0.5)
