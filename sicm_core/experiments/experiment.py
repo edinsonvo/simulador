@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -23,19 +23,19 @@ class Experiment:
     """
 
     id: UUID
-    scenario: "Scenario"
+    scenario: Scenario
     name: str
     description: str = ""
     author: str = "SICM Core"
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    result: "EquilibriumResult | None" = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+    result: EquilibriumResult | None = None
     notes: str = ""
     status: str = _PENDING
 
 
 def new_experiment(
     name: str,
-    scenario: "Scenario",
+    scenario: Scenario,
     description: str = "",
     author: str = "SICM Core",
     notes: str = "",
@@ -46,7 +46,7 @@ def new_experiment(
         name=name,
         description=description,
         author=author,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         scenario=scenario,
         notes=notes,
     )

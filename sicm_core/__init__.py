@@ -9,4 +9,4 @@ __version__ = "5.1.0rc1.post3"
 from . import models  # noqa: F401
 
 # API pública del motor.
-from .engine import Engine, dispatch, registry, register  # noqa: F401
+from .engine import Engine, dispatch, register, registry  # noqa: F401

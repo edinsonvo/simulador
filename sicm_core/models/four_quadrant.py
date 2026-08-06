@@ -7,9 +7,12 @@ Los cuatro cuadrantes forman un ciclo de retroalimentación:
 - **Cuadrante II** (superior izquierdo): IS-LM en el plano (Y, i).
 - **Cuadrante III** (inferior izquierdo): demanda agregada derivada de
   IS-LM y oferta agregada de corto plazo en el plano (Y, P).
-- **Cuadrante IV** (inferior derecho): demanda de trabajo (productividad
-  marginal) en el plano (N, W/P).
-- **Cuadrante I** (superior derecho): oferta de trabajo en el plano (N, W).
+- **Cuadrante IV** (inferior derecho): mercado laboral en (N, W/P), con la
+  demanda de trabajo (productividad marginal, pendiente negativa) y la oferta
+  de trabajo en salario real (pendiente positiva).
+- **Cuadrante I** (superior derecho): mercado laboral en (N, W), con la oferta
+  de trabajo en salario nominal (pendiente positiva) y la demanda de trabajo
+  expresada en salario nominal (W = P·PMgL, pendiente negativa).
 
 Cadenas de transmisión:
 
@@ -109,19 +112,41 @@ class FourQuadrantModel(BaseModel):
         return y, p
 
     def labor_demand_curve(self, n_values) -> tuple[np.ndarray, np.ndarray]:
-        """Demanda de trabajo: W/P = MPL = α·A·N^(α-1)."""
+        """Demanda de trabajo (salario real): W/P = MPL = α·A·N^(α-1)."""
         p = self.parameters
         alpha = max(p.alpha_prod, 1e-6)
         n = np.asarray(n_values, dtype=float)
         w = alpha * p.A_prod * (np.maximum(n, 1e-9) ** (alpha - 1.0))
         return n, w
 
+    def labor_demand_curve_nominal(
+        self, n_values, price: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Demanda de trabajo en el plano (N, W): W = P·PMgL, de pendiente
+        negativa en salario nominal para un nivel de precios dado."""
+        n, w_real = self.labor_demand_curve(n_values)
+        p_star = price if price is not None else self.solve()["P"]
+        return n, w_real * max(p_star, 1e-9)
+
     def labor_supply_curve(self, n_values) -> tuple[np.ndarray, np.ndarray]:
-        """Oferta de trabajo: N^s = N0 + η·(W/P^e) -> W = (P^e/η)·(N - N0)."""
+        """Oferta de trabajo (salario nominal): N^s = N0 + η·(W/P^e) ->
+        W = (P^e/η)·(N - N0)."""
         p = self.parameters
         eta = max(p.eta_s, 1e-6)
         n = np.asarray(n_values, dtype=float)
         w = (p.Pe / eta) * (n - p.N0_s)
+        return n, w
+
+    def labor_supply_curve_real(
+        self, n_values, price: float | None = None
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Oferta de trabajo en el plano (N, W/P): W/P = (P^e/(P·η))·(N - N0),
+        de pendiente positiva en salario real para el nivel de precios dado."""
+        p = self.parameters
+        eta = max(p.eta_s, 1e-6)
+        p_star = price if price is not None else self.solve()["P"]
+        n = np.asarray(n_values, dtype=float)
+        w = (p.Pe / (max(p_star, 1e-9) * eta)) * (n - p.N0_s)
         return n, w
 
     def production_curve(self, n_values) -> tuple[np.ndarray, np.ndarray]:

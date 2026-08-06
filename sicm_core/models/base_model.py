@@ -21,7 +21,7 @@ class BaseModel(ABC):
     family: ClassVar[str] = "generic"
     label: ClassVar[str] = "Modelo base"
 
-    def __init__(self, scenario: "Scenario") -> None:
+    def __init__(self, scenario: Scenario) -> None:
         self.scenario = scenario
 
     @property
@@ -29,12 +29,10 @@ class BaseModel(ABC):
         return self.scenario.parameters
 
     @abstractmethod
-    def solve(self) -> "Equilibrium":
+    def solve(self) -> Equilibrium:
         """Resuelve el equilibrio del escenario y lo devuelve."""
 
-    def solve_with_shocks(
-        self, shocks: list["Shock"]
-    ) -> tuple["Equilibrium", "Equilibrium"]:
+    def solve_with_shocks(self, shocks: list[Shock]) -> tuple[Equilibrium, Equilibrium]:
         """Resuelve el equilibrio base y el equilibrio con choques aplicados.
 
         Devuelve ``(baseline, final)``. No muta el escenario original.
